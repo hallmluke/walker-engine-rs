@@ -1,3 +1,6 @@
+use walker_engine::utility;
+use walker_engine::utility::constants::*;
+
 use ash::version::EntryV1_0;
 use ash::version::InstanceV1_0;
 use ash::vk;
@@ -10,8 +13,8 @@ use image::ImageReader;
 
 // Constants
 const WINDOW_TITLE: &'static str = "Walker Engine";
-const WINDOW_WIDTH: u32 = 800;
-const WINDOW_HEIGHT: u32 = 600;
+// const WINDOW_WIDTH: u32 = 800;
+// const WINDOW_HEIGHT: u32 = 600;
 
 struct WalkerEngine {
     _entry: ash::Entry,
@@ -37,6 +40,42 @@ impl WalkerEngine {
             .with_inner_size(winit::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
             .build(event_loop)
             .expect("Failed to create window.")
+    }
+
+    fn create_instance(entry: &ash::Entry) -> ash::Instance {
+        
+        let app_name = CString::new(WINDOW_TITLE).unwrap();
+        let engine_name = CString::new("Vulkan Engine").unwrap();
+        let app_info = vk::ApplicationInfo {
+            s_type: vk::StructureType::APPLICATION_INFO,
+            p_next: ptr::null(),
+            p_application_name: app_name.as_ptr(),
+            application_version: APPLICATION_VERSION,
+            p_engine_name: engine_name.as_ptr(),
+            engine_version: ENGINE_VERSION,
+            api_version: API_VERSION,
+        };
+
+        let extension_names = utility::platforms::required_extension_names();
+
+        let create_info = vk::InstanceCreateInfo {
+            s_type: vk::StructureType::INSTANCE_CREATE_INFO,
+            p_next: ptr::null(),
+            flags: vk::InstanceCreateFlags::empty(),
+            p_application_info: &app_info,
+            pp_enabled_layer_names: ptr::null(),
+            enabled_layer_count: 0,
+            pp_enabled_extension_names: extension_names.as_ptr(),
+            enabled_extension_count: extension_names.len() as u32,
+        };
+
+        let instance: ash::Instance = unsafe {
+            entry
+                .create_instance(&create_info, None)
+                .expect("Failed to create instance!")
+        };
+
+        instance
     }
 
     pub fn main_loop(event_loop: EventLoop<()>) {

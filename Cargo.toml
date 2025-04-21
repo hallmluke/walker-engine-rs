@@ -1,0 +1,13 @@
+[package]
+name = "WalkerEngine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winit     = "0.20.0"
+ash       = "0.29.0"
+num       = "0.2"
+cgmath    = "0.17.0"
+image     = "0.25.5"
+memoffset = "0.5.1"
+tobj      = "0.1.10"

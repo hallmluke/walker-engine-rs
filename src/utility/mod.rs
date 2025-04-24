@@ -1,3 +1,4 @@
+pub mod camera;
 pub mod constants;
 pub mod debug;
 pub mod fps_limiter;

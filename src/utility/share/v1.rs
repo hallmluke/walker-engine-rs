@@ -1,6 +1,5 @@
 use ash::vk;
 use image;
-use image::GenericImageView;
 
 use std::cmp::max;
 use std::ffi::CString;
@@ -71,18 +70,18 @@ pub fn create_render_pass(device: &ash::Device, surface_format: vk::Format) -> v
     }
 }
 
-/*pub fn create_graphics_pipeline(
+pub fn create_graphics_pipeline(
     device: &ash::Device,
     render_pass: vk::RenderPass,
     swapchain_extent: vk::Extent2D,
 ) -> (vk::Pipeline, vk::PipelineLayout) {
     let vert_shader_module = create_shader_module(
         device,
-        include_bytes!("../../../shaders/spv/09-shader-base.vert.spv").to_vec(),
+        include_bytes!("../../../shaders/spv/shader-base-vert.spv").to_vec(),
     );
     let frag_shader_module = create_shader_module(
         device,
-        include_bytes!("../../../shaders/spv/09-shader-base.frag.spv").to_vec(),
+        include_bytes!("../../../shaders/spv/shader-base-frag.spv").to_vec(),
     );
 
     let main_function_name = CString::new("main").unwrap(); // the beginning function name in shader code.
@@ -954,12 +953,11 @@ pub fn create_texture_image(
     image_object = image_object.flipv();
     let (image_width, image_height) = (image_object.width(), image_object.height());
     let image_data = match &image_object {
-        image::DynamicImage::ImageBgr8(_)
-        | image::DynamicImage::ImageLuma8(_)
-        | image::DynamicImage::ImageRgb8(_) => image_object.to_rgba().into_raw(),
-        image::DynamicImage::ImageBgra8(_)
+        image::DynamicImage::ImageLuma8(_)
+        | image::DynamicImage::ImageRgb8(_)
         | image::DynamicImage::ImageLumaA8(_)
-        | image::DynamicImage::ImageRgba8(_) => image_object.raw_pixels(),
+        | image::DynamicImage::ImageRgba8(_) => image_object.to_rgba8().into_raw(),
+        _ => panic!("Unexpected image format in create_texture_image")
     };
     let image_size =
         (::std::mem::size_of::<u8>() as u32 * image_width * image_height * 4) as vk::DeviceSize;
@@ -1213,4 +1211,4 @@ pub fn generate_mipmaps(
     }
 
     end_single_time_command(device, command_pool, submit_queue, command_buffer);
-}*/
+}

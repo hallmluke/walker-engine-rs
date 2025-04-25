@@ -1,7 +1,10 @@
 use cgmath::{Matrix4, Point3, Vector3, InnerSpace};
+use winit::event::MouseButton;
+use winit::keyboard::{Key, KeyCode};
+use winit_input_helper::WinitInputHelper;
 
 pub struct Camera {
-    m_view_matrix: Matrix4<f32>,
+    pub m_view_matrix: Matrix4<f32>,
     m_position: Point3<f32>,
     m_front: Vector3<f32>,
     m_up: Vector3<f32>,
@@ -10,7 +13,8 @@ pub struct Camera {
 
     m_yaw: f32,
     m_pitch: f32,
-    m_movement_speed: f32,
+    m_keyboard_movement_speed: f32,
+    m_mouse_movement_speed: f32
 }
 
 impl Camera {
@@ -32,7 +36,8 @@ impl Camera {
             m_world_up,
             m_yaw: 90.0f32,
             m_pitch: 0.0f32,
-            m_movement_speed: 5.0f32
+            m_keyboard_movement_speed: 5.0f32,
+            m_mouse_movement_speed: 5.0
         };
         camera.update_camera_vectors();
         camera.update_view_matrix();
@@ -57,5 +62,31 @@ impl Camera {
             self.m_position + self.m_front,
             self.m_up
         );
+    }
+
+    pub fn update(&mut self, delta_time: f32, input: &WinitInputHelper) {
+        if input.mouse_held(MouseButton::Right) {
+            let cursor_diff = input.cursor_diff();
+            self.m_yaw += cursor_diff.0 * delta_time * self.m_mouse_movement_speed;
+            self.m_pitch -= cursor_diff.1 * delta_time * self.m_mouse_movement_speed;
+
+            let velocity = self.m_keyboard_movement_speed * delta_time;
+
+            if input.key_held(KeyCode::KeyW) {
+                self.m_position += self.m_front * velocity;
+            }
+            if input.key_held(KeyCode::KeyA) {
+                self.m_position -= self.m_right * velocity;
+            }
+            if input.key_held(KeyCode::KeyS) {
+                self.m_position -= self.m_front * velocity;
+            }
+            if input.key_held(KeyCode::KeyD) {
+                self.m_position += self.m_right * velocity;
+            }
+        }
+
+        self.update_camera_vectors();
+        self.update_view_matrix();
     }
 }

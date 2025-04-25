@@ -116,11 +116,17 @@ pub unsafe fn create_surface<E: EntryV1_0, I: InstanceV1_0>(
 ) -> Result<vk::SurfaceKHR, vk::Result> {
     use std::os::raw::c_void;
     use std::ptr;
-    use winapi::shared::windef::HWND;
+    //use winapi::shared::windef::HWND;
     use winapi::um::libloaderapi::GetModuleHandleW;
-    use winit::platform::windows::WindowExtWindows;
+    //use winit::platform::windows::WindowExtWindows;
+    use winit::raw_window_handle::HasWindowHandle;
+    use winit::raw_window_handle::RawWindowHandle;
 
-    let hwnd = window.hwnd() as HWND;
+    //let hwnd = window.hwnd() as HWND;
+    let hwnd = match window.window_handle().unwrap().as_raw() {
+        RawWindowHandle::Win32(handle) => handle.hwnd.get(),
+        _ => panic!("not running on Windows")
+    };
     let hinstance = GetModuleHandleW(ptr::null()) as *const c_void;
     let win32_create_info = vk::Win32SurfaceCreateInfoKHR {
         s_type: vk::StructureType::WIN32_SURFACE_CREATE_INFO_KHR,

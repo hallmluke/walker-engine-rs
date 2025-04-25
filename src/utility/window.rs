@@ -1,6 +1,10 @@
-use winit::event::{Event, VirtualKeyCode, ElementState, KeyboardInput, WindowEvent};
-use winit::event_loop::{EventLoop, ControlFlow};
+//use winit::event::{Event, VirtualKeyCode, ElementState, KeyboardInput, WindowEvent};
+//use winit::event::{Event, ElementState, WindowEvent};
+//use winit::event::WindowEvent::KeyboardInput;
+//use winit::keyboard::KeyCode;
+use winit::event_loop::EventLoop;
 use image::ImageReader;
+use winit_input_helper::WinitInputHelper;
 
 
 const IS_PAINT_FPS_COUNTER: bool = true;
@@ -67,7 +71,7 @@ pub fn init_window(
 }
 
 pub trait VulkanApp {
-    fn draw_frame(&mut self, delta_time: f32);
+    fn draw_frame(&mut self, delta_time: f32, input: &WinitInputHelper);
     fn recreate_swapchain(&mut self);
     fn cleanup_swapchain(&self);
     fn wait_device_idle(&self);
@@ -77,24 +81,46 @@ pub trait VulkanApp {
 
 pub struct ProgramProc {
     pub event_loop: EventLoop<()>,
+    pub input: WinitInputHelper
 }
 
 impl ProgramProc {
 
     pub fn new() -> ProgramProc {
         // init window stuff
-        let event_loop = EventLoop::new();
+        let event_loop = EventLoop::new().unwrap();
+        let input = WinitInputHelper::new();
 
-        ProgramProc { event_loop }
+        ProgramProc { event_loop, input }
     }
 
-    pub fn main_loop<A: 'static + VulkanApp>(self, mut vulkan_app: A) {
+    pub fn main_loop<A: 'static + VulkanApp>(mut self, mut vulkan_app: A) {
 
         let mut tick_counter = super::fps_limiter::FPSLimiter::new();
 
-        self.event_loop.run(move |event, _, control_flow| {
+        //self.event_loop.run(move |event, _, control_flow| {
+        self.event_loop.run(move |event, elwt| {
 
-            match event {
+            if self.input.update(&event) {
+
+                if self.input.close_requested() {
+                    vulkan_app.wait_device_idle();
+                    elwt.exit();
+                    return;
+                }
+
+                if let Some(_resolution) = self.input.resolution() {
+                    vulkan_app.wait_device_idle();
+                    vulkan_app.resize_framebuffer();
+                }
+
+                tick_counter.tick_frame();
+                let delta_time = tick_counter.delta_time();
+
+                vulkan_app.draw_frame(delta_time, &self.input);
+            }
+
+            /*match event {
                 | Event::WindowEvent { event, .. } => {
                     match event {
                         | WindowEvent::CloseRequested => {
@@ -105,7 +131,7 @@ impl ProgramProc {
                             match input {
                                 | KeyboardInput { virtual_keycode, state, .. } => {
                                     match (virtual_keycode, state) {
-                                        | (Some(VirtualKeyCode::Escape), ElementState::Pressed) => {
+                                        | (Some(KeyCode::Escape), ElementState::Pressed) => {
                                             vulkan_app.wait_device_idle();
                                             *control_flow = ControlFlow::Exit
                                         },
@@ -129,7 +155,7 @@ impl ProgramProc {
                     tick_counter.keep_fps();
                     let delta_time = tick_counter.delta_time();
                     
-                    vulkan_app.draw_frame(delta_time);
+                    vulkan_app.draw_frame(delta_time, self.input);
 
                     if IS_PAINT_FPS_COUNTER {
                         print!("FPS: {}\r", tick_counter.fps());
@@ -139,9 +165,9 @@ impl ProgramProc {
                     vulkan_app.wait_device_idle();
                 },
                 _ => (),
-            }
+            }*/
 
-        })
+        });
     }
 
 }

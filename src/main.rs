@@ -17,6 +17,9 @@ use std::ffi::CString;
 use std::path::Path;
 use std::ptr;
 
+use winit::keyboard::{Key, KeyCode};
+use winit_input_helper::WinitInputHelper;
+
 // Constants
 const WINDOW_TITLE: &'static str = "Walker Engine";
 const MODEL_PATH: &'static str = "assets/chalet.obj";
@@ -1020,10 +1023,11 @@ impl WalkerEngine {
         command_buffers
     }
 
-    fn update_uniform_buffer(&mut self, current_image: usize, delta_time: f32) {
+    fn update_uniform_buffer(&mut self, current_image: usize, delta_time: f32, view: Matrix4<f32>) {
         //self.uniform_transform.model = Matrix4::from_axis_angle(Vector3::new(0.0, 0.0, 1.0), Deg(90.0) * delta_time) * self.uniform_transform.model;
         //self.uniform_transform.model = Matrix4::from_axis_angle(Vector3::new(0.0, 0.0, 1.0), Deg(90.0)) * self.uniform_transform.model;
 
+        self.uniform_transform.view = view;
         let ubos = [self.uniform_transform.clone()];
 
         let buffer_size = (std::mem::size_of::<UniformBufferObject>() * ubos.len()) as u64;
@@ -1100,7 +1104,14 @@ impl Drop for WalkerEngine {
 }
 
 impl VulkanApp for WalkerEngine {
-    fn draw_frame(&mut self, delta_time: f32) {
+    fn draw_frame(&mut self, delta_time: f32, input: &WinitInputHelper) {
+
+        if input.key_pressed(KeyCode::KeyR) {
+            println!("The 'R' key is being held!");
+        }
+
+        self.camera.update(delta_time, &input);
+
         let wait_fences = [self.in_flight_fences[self.current_frame]];
 
         unsafe {
@@ -1128,7 +1139,7 @@ impl VulkanApp for WalkerEngine {
             }
         };
 
-        self.update_uniform_buffer(image_index as usize, delta_time);
+        self.update_uniform_buffer(image_index as usize, delta_time, self.camera.m_view_matrix);
 
         let wait_semaphores = [self.image_available_semaphores[self.current_frame]];
         let wait_stages = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];

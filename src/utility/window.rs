@@ -102,7 +102,6 @@ impl ProgramProc {
         self.event_loop.run(move |event, elwt| {
 
             if self.input.update(&event) {
-
                 if self.input.close_requested() {
                     vulkan_app.wait_device_idle();
                     elwt.exit();
@@ -116,8 +115,10 @@ impl ProgramProc {
 
                 tick_counter.tick_frame();
                 let delta_time = tick_counter.delta_time();
-
+            
                 vulkan_app.draw_frame(delta_time, &self.input);
+
+                vulkan_app.window_ref().request_redraw();
             }
 
             /*match event {

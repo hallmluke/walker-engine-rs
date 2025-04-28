@@ -25,7 +25,7 @@ impl Camera {
             0.0f32, 0.0f32, 0.0f32, 0.0f32,
             0.0f32, 0.0f32, 0.0f32, 0.0f32,
         );
-        let m_position = Point3 { x: 0.0f32, y: 0.0f32, z: 0.0f32 };
+        let m_position = Point3 { x: -3.0f32, y: 0.5f32, z: 0.0f32 };
         let m_world_up = Vector3 { x: 0.0f32, y: 1.0f32, z: 0.0f32 };
         let mut camera = Camera {
             m_view_matrix,
@@ -34,7 +34,7 @@ impl Camera {
             m_up: Vector3 { x: 0.0f32, y: 0.0f32, z: 0.0f32 },
             m_right: Vector3 { x: 0.0f32, y: 0.0f32, z: 0.0f32 },
             m_world_up,
-            m_yaw: 90.0f32,
+            m_yaw: 0.0f32,
             m_pitch: 0.0f32,
             m_keyboard_movement_speed: 5.0f32,
             m_mouse_movement_speed: 5.0
@@ -69,6 +69,8 @@ impl Camera {
             let cursor_diff = input.cursor_diff();
             self.m_yaw += cursor_diff.0 * delta_time * self.m_mouse_movement_speed;
             self.m_pitch -= cursor_diff.1 * delta_time * self.m_mouse_movement_speed;
+            self.m_pitch = f32::min(self.m_pitch, 89.0);
+            self.m_pitch = f32::max(self.m_pitch, -89.0);
 
             let velocity = self.m_keyboard_movement_speed * delta_time;
 
@@ -84,6 +86,10 @@ impl Camera {
             if input.key_held(KeyCode::KeyD) {
                 self.m_position += self.m_right * velocity;
             }
+
+            println!("Position: {}, {}, {}", self.m_position.x, self.m_position.y, self.m_position.z);
+            println!("Front: {}, {}, {}", self.m_front.x, self.m_front.y, self.m_front.z);
+            println!("Yaw: {}, Pitch: {}", self.m_yaw, self.m_pitch);
         }
 
         self.update_camera_vectors();

@@ -304,7 +304,7 @@ impl WalkerEngine {
             index_buffer_memory,
 
             uniform_transform: UniformBufferObject {
-                model: Matrix4::from_angle_z(Deg(90.0)),
+                model: Matrix4::from_angle_x(Deg(-90.0)),
                 view: Matrix4::look_at(
                     Point3::new(2.0, 2.0, 2.0),
                     Point3::new(0.0, 0.0, 0.0),
@@ -1105,10 +1105,6 @@ impl Drop for WalkerEngine {
 
 impl VulkanApp for WalkerEngine {
     fn draw_frame(&mut self, delta_time: f32, input: &WinitInputHelper) {
-
-        if input.key_pressed(KeyCode::KeyR) {
-            println!("The 'R' key is being held!");
-        }
 
         self.camera.update(delta_time, &input);
 

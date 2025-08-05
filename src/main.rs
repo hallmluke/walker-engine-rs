@@ -1194,6 +1194,7 @@ impl VulkanApp for WalkerEngine {
         };
         if is_resized {
             self.is_framebuffer_resized = false;
+            
             self.recreate_swapchain();
         }
 
@@ -1299,6 +1300,16 @@ impl VulkanApp for WalkerEngine {
             &self.descriptor_sets,
             self.indices.len() as u32,
         );
+
+        let mut proj = cgmath::perspective(
+                        Deg(45.0),
+                        swapchain_stuff.swapchain_extent.width as f32
+                            / swapchain_stuff.swapchain_extent.height as f32,
+                        0.1,
+                        10.0,
+                    );
+            proj[1][1] = proj[1][1] * -1.0;
+            self.uniform_transform.proj = proj;
     }
 
     fn cleanup_swapchain(&self) {

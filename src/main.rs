@@ -20,6 +20,9 @@ use std::ptr;
 use winit::keyboard::{Key, KeyCode};
 use winit_input_helper::WinitInputHelper;
 
+use egui::{Context, RawInput};
+use egui::epaint::{Mesh};
+
 // Constants
 const WINDOW_TITLE: &'static str = "Walker Engine";
 const MODEL_PATH: &'static str = "assets/chalet.obj";
@@ -97,7 +100,13 @@ struct WalkerEngine {
     current_frame: usize,
 
     is_framebuffer_resized: bool,
-    camera: Camera
+    camera: Camera,
+
+    egui_ctx: egui::Context,
+    egui_vertex_buffer: Option<vk::Buffer>,
+    egui_vertex_buffer_memory: Option<vk::DeviceMemory>,
+    egui_index_buffer: Option<vk::Buffer>,
+    egui_index_buffer_memory: Option<vk::DeviceMemory>
 }
 
 impl WalkerEngine {
@@ -337,7 +346,13 @@ impl WalkerEngine {
             current_frame: 0,
 
             is_framebuffer_resized: false,
-            camera: Camera::new()
+            camera: Camera::new(),
+            egui_ctx: egui::Context::default(),
+
+            egui_vertex_buffer: None,
+            egui_vertex_buffer_memory: None,
+            egui_index_buffer: None,
+            egui_index_buffer_memory: None
         }
     }
 
@@ -1107,6 +1122,74 @@ impl VulkanApp for WalkerEngine {
     fn draw_frame(&mut self, delta_time: f32, input: &WinitInputHelper) {
 
         self.camera.update(delta_time, &input);
+
+
+        let inner_position = self.window.inner_position().unwrap();
+        let inner_size = self.window.inner_size();
+        let outer_position = self.window.outer_position().unwrap();
+        let outer_size = self.window.outer_size();
+        let viewport_info: egui::ViewportInfo = egui::ViewportInfo {
+            parent: None,
+            title: None,
+            events: Vec::new(), // TODO
+            native_pixels_per_point: Some(1.0), // TODO
+            monitor_size: Some(egui::Vec2 { x: 3840.0, y: 2160.0 }), // TODO
+            inner_rect: Some(egui::Rect { min: egui::Pos2 { x: inner_position.x as f32, y: inner_position.y as f32 }, max: egui::Pos2 { x: inner_position.x as f32 + inner_size.width as f32, y: inner_position.y as f32 + inner_size.height as f32 } }), //None,
+            outer_rect: Some(egui::Rect { min: egui::Pos2 { x: outer_position.x as f32, y: outer_position.y as f32 }, max: egui::Pos2 { x: outer_position.x as f32 + outer_size.width as f32, y: outer_position.y as f32 + outer_size.height as f32 } }),
+            minimized: None,
+            maximized: None,
+            fullscreen: None,
+            focused: None,
+        };
+
+        let viewport_id = egui::ViewportId { 0: egui::Id::new("MainViewport") };
+        let mut viewports = egui::ViewportIdMap::default();
+        viewports.insert(viewport_id, viewport_info);
+
+        let mut events: Vec<egui::Event> = Vec::new();
+        if let Some(cursor) = input.cursor()
+        {
+            let mouse_event = egui::Event::PointerMoved { 0: egui::Pos2 { x: cursor.0, y: cursor.1 }};
+            events.push(mouse_event);
+        }
+
+        let raw_input: egui::RawInput = egui::RawInput { 
+            viewport_id: viewport_id, // egui::ViewportId { 0: egui::Id::new("MainViewport") },
+            viewports: viewports, // egui::ViewportIdMap::default(),
+            screen_rect: Some(egui::Rect { min: egui::Pos2 { x: inner_position.x as f32, y: inner_position.y as f32 }, max: egui::Pos2 { x: inner_position.x as f32 + inner_size.width as f32, y: inner_position.y as f32 + inner_size.height as f32 } }), //None,
+            max_texture_side: None,
+            time: None,
+            predicted_dt: 1.0 / 60.0,
+            modifiers: egui::Modifiers { alt: false, ctrl: false, shift: false, mac_cmd: false, command: false},
+            events: events,
+            hovered_files: Vec::new(),
+            dropped_files: Vec::new(),
+            focused: true,
+            system_theme: None
+        };
+
+        let full_output = self.egui_ctx.run(raw_input, |ctx| {
+            egui::CentralPanel::default().show(&ctx, |ui| {
+                ui.label("Hello world!");
+            });
+        });
+
+        let clipped_primitives = self.egui_ctx.tessellate(full_output.shapes, full_output.pixels_per_point);
+        for prim in clipped_primitives.iter() {
+            match &prim.primitive {
+                egui::epaint::Primitive::Mesh (mesh) => {
+                    // TODO: where do we free the old one?
+                    let (vertex_buffer, vertex_buffer_memory) = share::v1::create_vertex_buffer(
+                        &self.device,
+                        &self.memory_properties,
+                        self.command_pool,
+                        self.graphics_queue,
+                        &mesh.vertices,
+                        );
+                }
+                _ => {}
+            }
+        }
 
         let wait_fences = [self.in_flight_fences[self.current_frame]];
 
